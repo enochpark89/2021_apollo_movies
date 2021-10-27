@@ -161,3 +161,119 @@ const Loading = styled.div`
   margin-top: 10px;
 `;
 ```
+
+Final:
+```js
+import React from "react";
+import { gql } from "apollo-boost";
+import { useQuery } from "@apollo/react-hooks";
+import styled from "styled-components";
+import Movie from "../components/Movie";
+
+// use gpl query.
+const GET_MOVIES = gql`
+  {
+    movies {
+      id
+      medium_cover_image
+    }
+  }
+`;
+
+// Styled Components
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+`;
+const Header = styled.header`
+  background-image: linear-gradient(-45deg, #d754ab, #fd723a);
+  height: 45vh;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+`;
+const Title = styled.h1`
+  font-size: 60px;
+  font-weight: 600;
+  margin-bottom: 20px;
+`;
+const Subtitle = styled.h3`
+  font-size: 35px;
+`;
+const Loading = styled.div`
+  font-size: 18px;
+  opacity: 0.5;
+  font-weight: 500;
+  margin-top: 10px;
+`;
+
+// you will map only id of the data retrieved.
+export default () => {
+    const { loading, data } = useQuery(GET_MOVIES);
+    return (
+      <Container>
+        <Header>
+          <Title>Apollo 2021</Title>
+          <Subtitle>I love GraphQL</Subtitle>
+        </Header>
+        {loading && <Loading>Loading...</Loading>}
+        {!loading &&
+          data.movies &&
+          data.movies.map(m => <Movie key={m.id} id={m.id} />)}
+      </Container>
+    );
+  };
+```
+
+# 4.0 Cache and Styles
+
+- If Apollo gets something, it is going to keep it there. 
+- User is going to see less and less loading stage. 
+- If you use the Redux, you have to do everything else but when you click on the detail and go back to the menu, the page is cached so that user can access again using the cache without having to request data.
+
+- we are going to style Container and Poster. Get the image
+- Following pages has been updated:
+  - Movie.js: Creates a Container, Poster, and Link to the Detail view
+  - Detail.js: Retrieve language and rating data. Creates styled-components called Container, Column, Title, Subtitle, Description, and Poster. The components are displayed on the detailed page. 
+  - Home.js: Creates a Movies in grid so that each movie will display as a organized grid. When the loading is done and data is retrieved, the data is going to be mapped and gets sent to Movie.js.
+
+# 5.0 Data & Apollo Dev Tool,s
+
+- You always have to ask for data immediately because sometimes, data does not get sent. 
+- If the data is undefined or unable to retrieve, it will show the error and not lead the page. 
+  - Use terniary condition to route users and handle undefined data.
+- In this section, we will update the Detail.js page to show the **language** and **description** of the movies.
+- update Poster to check the existence of data. If data exist......
+
+- you can see the tab called Apollo and see that there are many cache saved for users. Once the user enter the detailed site, apollo will add the data inside the cache so that user can use that data when they go back to that specific data.
+
+# 6.0 Suggestions
+
+- If you go to the playground, you see the suggestions.
+- The suggestions will have the data of its own about the movie. 
+- You can use optional chaining to check whether the data exist or not as below instead of using the terniary operator.
+
+Detail.js
+```js
+......(skiped)
+        <Subtitle>
+          {data?.movie?.language} · {data?.movie?.rating}
+        </Subtitle>
+        <Description>{data?.movie?.description_intro}</Description>
+......(skiped)
+        <Poster bg={data?.movie?.medium_cover_image}></Poster>
+```
+
+Home.js
+```js
+      <Movies>
+        {data?.movies?.map(m => (
+          <Movie key={m.id} id={m.id} bg={m.medium_cover_image} />
+        ))}
+      </Movies>
+```
