@@ -64,7 +64,7 @@ export default () => {
   const { id } = useParams();
   // convert id into a number because it might be a string.
   const { loading, data } = useQuery(GET_MOVIE, {
-    variables: { id: +id },
+    variables: { id: parseInt(id) }
     });
     return (
       <Container>

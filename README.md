@@ -277,3 +277,203 @@ Home.js
         ))}
       </Movies>
 ```
+
+# 7.0 - Local State
+
+- Modify data that came by.
+- If you need to do something with the data you got, create dynamics and interactivity for users. 
+- For example, user can click like button and it will add like property inside the data. 
+
+**Make sure that this is happening on a localhost**
+
+- Create a resolver on apollo.js
+
+src/apollo.js
+```js
+  uri: "http://localhost:4000",
+  resolvers: {
+    Movie: {
+      isLiked: () => false
+    }
+  }
+```
+
+- From a backend, update isLiked property and send it to presenters.
+
+Home.js
+```js
+// add gql
+const GET_MOVIES = gql`
+  {
+    movies {
+      id
+      medium_cover_image
+      isLiked @client
+    }
+  }
+`;
+
+// send data + updated data to Movie presenter
+          <Movie
+            key={m.id}
+            id={m.id}
+            isLiked={m.isLiked}
+            bg={m.medium_cover_image}
+          />
+
+
+```
+
+Movie.js
+```js
+// add like button on Movie.js
+export default ({ id, bg, isLiked }) => (
+    <Container>
+    <Link to={`/${id}`}>
+      <Poster bg={bg} />
+    </Link>
+    <button>{isLiked ? "Unlike" : "Like"}</button>
+  </Container>
+);
+```
+
+# 8.0 How do you make an interactivity to a like button.
+
+- You can use mutation to update isLike.
+
+apollo.js
+```js
+
+// resolver creates isLike() that you can use
+resolvers: {
+    Movie: {
+      isLiked: () => false
+    },
+    // Mutation will get the cache and change to true.
+    Mutation: {
+      likeMovie: (_, { id }, { cache }) => {
+        cache.writeData({
+          id: `Movie:${id}`,
+          data: {
+            isLiked: true,
+            medium_cover_image: "lalalalal"
+          }
+        });
+      }
+    }
+  }
+});
+```
+
+- Incorporate Mutation to src/components/Movie.js
+
+```ts
+import React from "react";
+import { Link } from "react-router-dom";
+import styled from "styled-components";
+// mutation is imported.
+import { gql } from "apollo-boost";
+import { useMutation } from "@apollo/react-hooks";
+
+const LIKE_MOVIE = gql`
+  mutation likeMovie($id: Int!) {
+    likeMovie(id: $id) @client
+  }
+`;
+
+const Container = styled.div`
+  height: 400px;
+	@@ -19,11 +27,18 @@ const Poster = styled.div`
+  border-radius: 7px;
+`;
+
+export default ({ id, bg, isLiked }) => {
+  const [likeMovie] = useMutation(LIKE_MOVIE, {
+    variables: { id: parseInt(id) }
+  });
+  return (
+    <Container>
+      <Link to={`/${id}`}>
+        <Poster bg={bg} />
+      </Link>
+        {/* Call the mutation; show the current status of the isLike*/}
+
+      <button onClick={isLiked ? null : likeMovie}>
+        {isLiked ? "Unlike" : "Like"}
+      </button>
+    </Container>
+  );
+};
+```
+
+# 9.0 Connecting Detail and Home
+
+- Write unlikeMovie or toggleLikeMovie
+
+src/apollo.js
+```js
+//toggleLikeMovie will change isLiked from true to false or false to true depending on a current state.
+  Mutation: {
+      toggleLikeMovie: (_, { id, isLiked }, { cache }) => {
+        cache.writeData({
+          id: `Movie:${id}`,
+          data: {
+            isLiked: !isLiked
+          }
+        });
+      }
+```
+
+src/components/Movie.js
+
+```js
+import { useMutation } from "@apollo/react-hooks";
+
+const LIKE_MOVIE = gql`
+  mutation toggleLikeMovie($id: Int!, $isLiked: Boolean!) {
+    toggleLikeMovie(id: $id, isLiked: $isLiked) @client
+  }
+`;
+
+const Poster = styled.div`
+`;
+
+// Button will now activate toggleMovie mutation.
+
+export default ({ id, bg, isLiked }) => {
+  const [toggleMovie] = useMutation(LIKE_MOVIE, {
+    variables: { id: parseInt(id), isLiked }
+  });
+  return (
+    <Container>
+      <Link to={`/${id}`}>
+        <Poster bg={bg} />
+      </Link>
+      <button onClick={toggleMovie}>{isLiked ? "Unlike" : "Like"}</button>
+    </Container>
+  );
+};
+```
+
+- Change the detail page so that it would show on the detail.
+
+src/routes/Detail.js
+```js
+const GET_MOVIE = gql`
+  query getMovie($id: Int!) {
+    movie(id: $id) {
+      id
+      title
+      medium_cover_image
+      language
+      rating
+      description_intro
+      isLiked @client
+    }
+    suggestions(id: $id) {
+      id
+      medium_cover_image
+    }
+  }
+`;
+```
